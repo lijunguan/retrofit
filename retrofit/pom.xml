@@ -4,7 +4,7 @@
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
-    <groupId>com.squareup.retrofit2</groupId>
+    <groupId>com.wucaiapp.app.retrofit2</groupId>
     <artifactId>parent</artifactId>
     <version>2.4.0</version>
     <relativePath>../pom.xml</relativePath>

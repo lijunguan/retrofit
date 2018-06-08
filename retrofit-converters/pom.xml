@@ -26,4 +26,16 @@
     <module>moshi</module>
     <module>jaxb</module>
   </modules>
+  <build>
+    <plugins>
+      <!-- Do not deploy this as an artifact to Maven central. -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-deploy-plugin</artifactId>
+        <configuration>
+          <skip>true</skip>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
 </project>
