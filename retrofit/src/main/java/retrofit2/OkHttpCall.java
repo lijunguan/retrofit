@@ -197,7 +197,8 @@ final class OkHttpCall<T> implements Call<T> {
         .build();
 
     int code = rawResponse.code();
-    if (code < 200 || code >= 300) {
+    //注意： 服务器定义299: 表示业务返回错误, body中为错误信息结构体 （ 服务器ants架构并非完全遵循Http协议）
+    if (code < 200 || code >= 300 || code == 299) {
       try {
         // Buffer the entire body to avoid future I/O.
         ResponseBody bufferedBody = Utils.buffer(rawBody);

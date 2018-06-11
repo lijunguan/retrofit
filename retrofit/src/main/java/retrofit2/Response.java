@@ -119,7 +119,7 @@ public final class Response<T> {
 
   /** Returns true if {@link #code()} is in the range [200..300). */
   public boolean isSuccessful() {
-    return rawResponse.isSuccessful();
+    return rawResponse.isSuccessful() && code() != 299;
   }
 
   /** The deserialized response body of a {@linkplain #isSuccessful() successful} response. */

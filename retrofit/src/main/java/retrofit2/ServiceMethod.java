@@ -34,6 +34,7 @@ import okhttp3.MultipartBody;
 import okhttp3.RequestBody;
 import okhttp3.ResponseBody;
 import retrofit2.http.Body;
+import retrofit2.http.BodyField;
 import retrofit2.http.DELETE;
 import retrofit2.http.Field;
 import retrofit2.http.FieldMap;
@@ -76,8 +77,11 @@ final class ServiceMethod<R, T> {
   private final boolean isFormEncoded;
   private final boolean isMultipart;
   private final ParameterHandler<?>[] parameterHandlers;
+  private final Retrofit retrofit;
+
 
   ServiceMethod(Builder<R, T> builder) {
+    this.retrofit = builder.retrofit;
     this.callFactory = builder.retrofit.callFactory();
     this.callAdapter = builder.callAdapter;
     this.baseUrl = builder.retrofit.baseUrl();
@@ -95,7 +99,7 @@ final class ServiceMethod<R, T> {
   /** Builds an HTTP request from method arguments. */
   okhttp3.Call toCall(@Nullable Object... args) throws IOException {
     RequestBuilder requestBuilder = new RequestBuilder(httpMethod, baseUrl, relativeUrl, headers,
-        contentType, hasBody, isFormEncoded, isMultipart);
+            contentType, hasBody, isFormEncoded, isMultipart, retrofit);
 
     @SuppressWarnings("unchecked") // It is an error to invoke a method with the wrong arg types.
     ParameterHandler<Object>[] handlers = (ParameterHandler<Object>[]) parameterHandlers;
@@ -359,7 +363,16 @@ final class ServiceMethod<R, T> {
 
     private ParameterHandler<?> parseParameterAnnotation(
         int p, Type type, Annotation[] annotations, Annotation annotation) {
-      if (annotation instanceof Url) {
+      if (annotation instanceof BodyField) {
+        if (isFormEncoded || isMultipart) {
+          throw parameterError(p,
+                  "@Body parameters cannot be used with form or multi-part encoding.");
+        }
+        BodyField bodyField = (BodyField) annotation;
+        String name = bodyField.value();
+        gotBody = true;
+        return new ParameterHandler.BodyField<>(name);
+      } else if (annotation instanceof Url) {
         if (gotUrl) {
           throw parameterError(p, "Multiple @Url method annotations found.");
         }

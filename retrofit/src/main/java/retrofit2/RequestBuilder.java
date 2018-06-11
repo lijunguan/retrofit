@@ -16,6 +16,9 @@
 package retrofit2;
 
 import java.io.IOException;
+import java.lang.annotation.Annotation;
+import java.util.HashMap;
+import java.util.Map;
 import javax.annotation.Nullable;
 import okhttp3.FormBody;
 import okhttp3.Headers;
@@ -45,16 +48,19 @@ final class RequestBuilder {
   private @Nullable MultipartBody.Builder multipartBuilder;
   private @Nullable FormBody.Builder formBuilder;
   private @Nullable RequestBody body;
+  private @Nullable Map<String, Object> bodyFiledMap;
+  Retrofit retrofit;
 
   RequestBuilder(String method, HttpUrl baseUrl, @Nullable String relativeUrl,
       @Nullable Headers headers, @Nullable MediaType contentType, boolean hasBody,
-      boolean isFormEncoded, boolean isMultipart) {
+      boolean isFormEncoded, boolean isMultipart, Retrofit retrofit) {
     this.method = method;
     this.baseUrl = baseUrl;
     this.relativeUrl = relativeUrl;
     this.requestBuilder = new Request.Builder();
     this.contentType = contentType;
     this.hasBody = hasBody;
+    this.retrofit = retrofit;
 
     if (headers != null) {
       requestBuilder.headers(headers);
@@ -67,6 +73,8 @@ final class RequestBuilder {
       // Will be set to 'body' in 'build'.
       multipartBuilder = new MultipartBody.Builder();
       multipartBuilder.setType(MultipartBody.FORM);
+    } else {
+      bodyFiledMap = new HashMap<>();
     }
   }
 
@@ -163,6 +171,11 @@ final class RequestBuilder {
     }
   }
 
+  @SuppressWarnings("ConstantConditions")
+  void addBodyField(String name, Object value) {
+    bodyFiledMap.put(name, value);
+  }
+
   @SuppressWarnings("ConstantConditions") // Only called when isFormEncoded was true.
   void addFormField(String name, String value, boolean encoded) {
     if (encoded) {
@@ -208,6 +221,17 @@ final class RequestBuilder {
         body = formBuilder.build();
       } else if (multipartBuilder != null) {
         body = multipartBuilder.build();
+      } else if (bodyFiledMap != null && !bodyFiledMap.isEmpty()) {
+        try {
+          Converter<Map, RequestBody> converter;
+          converter = retrofit.requestBodyConverter(Map.class,
+                  new Annotation[0], new Annotation[0]);
+          body = converter.convert(bodyFiledMap);
+        } catch (IOException e) {
+          throw new RuntimeException("Unable to convert " + bodyFiledMap + " to RequestBody", e);
+        } catch (IllegalArgumentException ignored) {
+          throw new RuntimeException("no converter available for " + Map.class);
+        }
       } else if (hasBody) {
         // Body is absent, make an empty body.
         body = RequestBody.create(null, new byte[0]);

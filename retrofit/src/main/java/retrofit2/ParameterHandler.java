@@ -339,6 +339,21 @@ abstract class ParameterHandler<T> {
     }
   }
 
+  static final class BodyField<T> extends ParameterHandler<T> {
+    private final String name;
+
+    BodyField(String name) {
+      this.name = name;
+    }
+
+
+    @Override
+    void apply(RequestBuilder builder, @Nullable T value) {
+      if (value == null) return; // Skip null values.
+      builder.addBodyField(name, value);
+    }
+  }
+
   static final class Body<T> extends ParameterHandler<T> {
     private final Converter<T, RequestBody> converter;
 
